@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  jenkins:
+    build:
+      context: .
+      dockerfile: Dockerfile.jenkins
+    container_name: edge-jenkins-server
+    user: root
+    ports:
+      - "8081:8080"
+      - "50000:50000"
+    volumes:
+      # This is the magic line. It maps your WSL host's Docker engine directly into the Jenkins container.
+      - /var/run/docker.sock:/var/run/docker.sock
+      # This persists your Jenkins data (jobs, plugins, passwords) even if the container restarts.
+      - jenkins_data:/var/jenkins_home
+
+volumes:
+  jenkins_data:

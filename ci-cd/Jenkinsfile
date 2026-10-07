@@ -1,0 +1,65 @@
+pipeline {
+    // 1. Where to execute the pipeline
+    agent {
+        docker {
+            image 'zephyr-build-env:latest' // The Docker image you want to use
+            args '-u root'         // Optional: Run container as root user if needed
+        }
+    }
+    // 2. Environment variables configuration
+    environment {
+        
+    }
+
+    // 3. The execution steps divided into stages
+    stages {
+        stage('Checkout') {
+            steps {
+                // Jenkins automatically checks out the code before the pipeline starts
+                checkout scm
+            }
+        }
+
+        stage('Static Analysis') {
+            steps {
+                echo "Running Cppcheck (We will add this in Stage 3)"
+            }
+        }
+
+        stage('Build Firmware') {
+            steps {
+                sh '''
+                    west build -p always -b nucleo_f401re firmware/
+                '''
+            }
+        }
+        stage('Test') {
+            steps {
+                echo 'Running automated tests...'
+                sh 'make test'
+            }
+        }
+        stage('Deploy') {
+            // Conditional execution
+            when {
+                branch 'main'
+            }
+            steps {
+                echo 'Deploying to production...'
+            }
+        }
+    }
+
+    // 4. Actions to run depending on build outcomes
+    post {
+        always {
+            echo 'Cleaning up the workspace...'
+        }
+        success {
+            echo 'Pipeline completed successfully!'
+        }
+        failure {
+            echo 'Pipeline failed. Sending alerts...'
+        }
+    }
+}

@@ -1,0 +1,51 @@
+# Build and Artifact Directories
+build/
+build_*/
+_build/
+dist/
+bin/
+
+# Compiled Binaries & Firmware Images
+*.elf
+*.hex
+*.bin
+*.map
+*.o
+*.a
+*.so
+
+# CMake and Ninja Temporary Files
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+compile_commands.json
+.ninja_deps
+.ninja_log
+build.ninja
+
+# Zephyr Generated Output
+zephyr.dts
+devicetree_generated.h
+.config
+.config.old
+
+# Python & Testing Caches
+__pycache__/
+*.py[cod]
+*\.class
+.pytest_cache/
+.coverage
+htmlcov/
+*.log
+
+# Environment & Secret files
+.env
+*.key
+*.pem
+
+# IDE & Editor Specific
+.idea/
+*.swp
+*~
+.DS_Store
+Thumbs.db

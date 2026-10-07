@@ -1,0 +1,11 @@
+FROM jenkins/jenkins:lts
+
+# Switch to root to install system packages and access the Docker socket
+USER root
+
+# Install the Docker CLI so Jenkins can run 'docker build' and 'docker run'
+RUN apt-get update && apt-get install -y docker.io
+
+# Note: In a production enterprise environment, running Jenkins as root is a security risk. 
+# You would normally create a specific docker group and add the jenkins user to it. 
+# For our local WSL testing, root avoids complex WSL permission mapping headaches.
