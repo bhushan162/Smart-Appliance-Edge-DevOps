@@ -39,3 +39,9 @@ RUN cd /opt && \
     rm zephyr-sdk-0.16.8_linux-x86_64.tar.xz && \
     cd zephyr-sdk-0.16.8 && \
     ./setup.sh -t arm-zephyr-eabi -h -c
+
+
+# 9. Set permanent environment variables for West, Zephyr, and QEMU
+ENV ZEPHYR_BASE=/opt/zephyrproject/zephyr
+ENV ZEPHYR_SDK_INSTALL_DIR=/opt/zephyr-sdk-0.16.8
+ENV PATH="/opt/zephyr-sdk-0.16.8/sysroots/x86_64-pokysdk-linux/usr/bin:/opt/venv/bin:$PATH"
