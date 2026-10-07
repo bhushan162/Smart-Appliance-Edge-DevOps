@@ -6,11 +6,6 @@ pipeline {
             args '-u root'         // Optional: Run container as root user if needed
         }
     }
-    // 2. Environment variables configuration
-    environment {
-        
-    }
-
     // 3. The execution steps divided into stages
     stages {
         stage('Checkout') {
