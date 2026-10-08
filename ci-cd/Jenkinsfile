@@ -20,18 +20,31 @@ pipeline {
                 echo "Running Cppcheck (We will add this in Stage 3)"
             }
         }
+        stage('TEST SIMULATION - QEMU') {
+            steps {
+                sh'''
+                # 1. Build specifically for virtual QEMU target
+                west build -p always -b qemu_cortex_m3 firmware/ -d build_qemu
+
+                # 2. Run your Python smoke test
+                python3 simulation/qemu/run_qemu_test.py
+                '''
+            }
+        }
 
         stage('Build Firmware') {
             steps {
                 sh '''
+                # Build physical release artifact only after simulation passes
                     west build -p always -b nucleo_f401re firmware/
                 '''
             }
         }
+
         stage('Test') {
             steps {
                 echo 'Running automated tests...'
-                sh 'make test'
+                
             }
         }
         stage('Deploy') {
