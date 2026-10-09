@@ -6,6 +6,13 @@ pipeline {
             args '-u root'         // Optional: Run container as root user if needed
         }
     }
+
+    // 2. Poll GitHub every 2 minutes for new commits
+    triggers {
+        pollSCM('H/2 * * * *')
+    }
+
+
     // 3. The execution steps divided into stages
     stages {
         stage('Checkout') {
@@ -13,11 +20,6 @@ pipeline {
                 // Jenkins automatically checks out the code before the pipeline starts
                 checkout scm
             }
-        }
-
-        // 2. Poll GitHub every 2 minutes for new commits
-        triggers {
-            pollSCM('H/2 * * * *')
         }
 
         stage('Static Analysis') {
