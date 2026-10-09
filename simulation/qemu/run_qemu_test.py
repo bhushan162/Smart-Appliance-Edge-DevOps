@@ -14,7 +14,7 @@ import select
 
 # --- Configuration ---
 TIMEOUT_SECONDS = 6
-BINARY_PATH = "build/zephyr/zephyr.elf"
+BINARY_PATH = "build_qemu/zephyr/zephyr.elf"
 
 QEMU_CMD = [
     "qemu-system-arm",
