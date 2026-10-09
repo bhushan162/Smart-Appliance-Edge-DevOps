@@ -15,6 +15,11 @@ pipeline {
             }
         }
 
+        // 2. Poll GitHub every 2 minutes for new commits
+        triggers {
+            pollSCM('H/2 * * * *')
+        }
+
         stage('Static Analysis') {
             steps {
                 echo "Running Cppcheck (We will add this in Stage 3)"
@@ -35,7 +40,7 @@ pipeline {
         stage('Build Firmware') {
             steps {
                 sh '''
-                # Build physical release artifact only after simulation passes
+                    # Build physical release artifact only after simulation passes
                     west build -p always -b nucleo_f401re firmware/
                 '''
             }
