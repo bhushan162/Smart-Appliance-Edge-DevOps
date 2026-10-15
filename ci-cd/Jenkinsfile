@@ -73,8 +73,9 @@ pipeline {
                 echo 'Deploying to production...'
             }
         }
+        */
     }
-*/
+
     // 4. Actions to run depending on build outcomes
     post {
         always {
