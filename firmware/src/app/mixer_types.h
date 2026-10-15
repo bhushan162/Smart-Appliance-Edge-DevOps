@@ -2,7 +2,7 @@
 #define MIXER_TYPES_H
 
 #include <stdint.h>
-#include <stbool.h>
+#include <stdbool.h>
 
 /* Mixer Operational States */
 typedef enum {

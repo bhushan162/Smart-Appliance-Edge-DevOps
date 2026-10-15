@@ -27,18 +27,19 @@ pipeline {
                 echo "Running Cppcheck (We will add this in Stage 3)"
             }
         }
+
         stage('TEST SIMULATION - QEMU') {
             steps {
                 sh'''
                 # 1. Build specifically for virtual QEMU target
-                west build -p always -b qemu_cortex_m3 firmware/ -d build_qemu
+                west build -p always -b mps2_an521 firmware/ -d build_qemu
 
                 # 2. Run your Python smoke test
                 python3 simulation/qemu/run_qemu_test.py
                 '''
             }
         }
-
+/* 
         stage('Build Firmware') {
             steps {
                 sh '''
@@ -72,6 +73,7 @@ pipeline {
                 echo 'Deploying to production...'
             }
         }
+        */
     }
 
     // 4. Actions to run depending on build outcomes
