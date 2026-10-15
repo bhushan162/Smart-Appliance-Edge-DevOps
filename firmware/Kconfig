@@ -1,0 +1,37 @@
+# =====================================================================
+# Smart Hand Mixer Kconfig - Declarative Tuning Parameters
+# =====================================================================
+
+menu "Smart Hand Mixer Configuration"
+
+config APP_MAX_SPEED_LEVELS
+    int "Number of discrete mechanical speed steps"
+    default 10
+    range 1 12
+    help
+      Total mechanical slider contact steps available on the appliance.
+
+config APP_RAMP_STEP_PERCENT
+    int "Soft-start duty cycle increment per control tick (%i"
+    default 5
+    range 1 25
+    help
+      Defines motor acceleration smoothness. Smaller values prevent inrush current spikes.
+
+config APP_RAMP_TICK_MS
+    int "Motor control loop interval in milliseconds"
+    default 100
+    range 10 500
+    help
+      Periodic timing for the motor control ramping loop.
+
+config APP_THERMAL_CUTOFF_TEMP_C
+    int "Motor coil emergency thermal cutoff threshold in Celsius"
+    default 85
+    range 50 150
+    help
+      Safety limit. Exceeding this temperature immediately halts motor PWM.
+
+endmenu
+
+source "Kconfig.zephyr"
