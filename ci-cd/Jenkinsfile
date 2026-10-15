@@ -32,7 +32,7 @@ pipeline {
             steps {
                 sh'''
                 # 1. Build specifically for virtual QEMU target
-                west build -p always -b qemu_cortex_m33 firmware/ -d build_qemu
+                west build -p always -b mps2_an521 firmware/ -d build_qemu
 
                 # 2. Run your Python smoke test
                 python3 simulation/qemu/run_qemu_test.py
