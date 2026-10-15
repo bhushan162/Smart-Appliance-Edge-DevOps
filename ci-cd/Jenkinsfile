@@ -39,16 +39,16 @@ pipeline {
                 '''
             }
         }
-/* 
+
         stage('Build Firmware') {
             steps {
                 sh '''
                     # Build physical release artifact only after simulation passes
-                    west build -p always -b nucleo_f401re firmware/ -d build_stm32
+                    west build -p always -b frdm_rw612 firmware/ -d rw610
                 '''
             }
         }
-
+        /* 
         stage('TEST SIMULATION - RENODE') {
             steps {
                 sh '''
