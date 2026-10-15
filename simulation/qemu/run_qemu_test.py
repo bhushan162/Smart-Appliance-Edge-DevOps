@@ -18,7 +18,7 @@ BINARY_PATH = "build_qemu/zephyr/zephyr.elf"
 
 QEMU_CMD = [
     "qemu-system-arm",
-    "-machine", "lm3s6965evb",
+    "-machine", "mps2-an505",
     "-cpu", "cortex-m33",
     "-nographic",
     "-kernel", BINARY_PATH
