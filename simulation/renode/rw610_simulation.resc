@@ -1,0 +1,21 @@
+# =====================================================================
+# Renode Headless Simulation Script for NXP RW610 Cortex-M33
+# Smart-Appliance-Edge-DevOps
+# =====================================================================
+
+$bin?=@build_rw610/zephyr/zephyr.elf
+
+# 1. Instantiate the virtual machine
+mach create "smart-hand-mixer-rw610"
+
+# 2. Load your custom RW610 platform blueprint
+machine LoadPlatformDescription @simulation/renode/rw610.repl
+
+# 3. Load the compiled Cortex-M33 ELF binary
+sysbus LoadELF $bin
+
+# 4. Pipe Flexcomm 3 serial logs to standard output
+showAnalyzer sysbus.flexcomm3 Antmicro.Renode.Analyzers.LoggingUartAnalyzer
+
+# 5. Advance virtual time by 1 second to capture boot logs
+emulation RunFor "1.0"

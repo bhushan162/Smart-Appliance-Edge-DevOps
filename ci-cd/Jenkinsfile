@@ -48,7 +48,7 @@ pipeline {
                 '''
             }
         }
-        /* 
+
         stage('TEST SIMULATION - RENODE') {
             steps {
                 sh '''
@@ -57,7 +57,7 @@ pipeline {
                 '''
             }
         }
-
+        /* 
         stage('Test') {
             steps {
                 echo 'Running automated tests...'

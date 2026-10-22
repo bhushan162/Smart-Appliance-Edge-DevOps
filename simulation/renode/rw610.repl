@@ -1,0 +1,37 @@
+// =====================================================================
+// NXP RW610 (Cortex-M33) Custom Renode Hardware Blueprint
+// Smart-Appliance-Edge-DevOps Platform
+// ====================================================================
+
+// 1. ARM Cortex-M33 Core
+cpu: CPU.CortexM @ sysbus
+    cpuType: "cortex-m33"
+    nvic: nvic
+
+// 2. ARQ Nested Vector Interrupt Controller (NVIC)
+nvic: IRQControllers.NVIC @ sysbus 0xE000E000
+    IRQ -> cpu@0
+
+// 3. FlexSPI Flash (8 MB XIP at 0x18000000, plus 0x08000000 alias)
+flash: Memory.MappedMemory @ sysbus 0x18000000
+    size: 0x00800000
+
+flash_alias: Memory.MappedMemory @ sysbus 0x08000000
+    size: 0x00800000
+
+// 4. Internal RAM Banks (Code SRAM: 256KB at 0x00000000, Data SRAM: 960KB at 0x00040000)
+sram_code: Memory.MappedMemory @ sysbus 0x00000000
+    size: 0x00040000
+
+sram_data: Memory.MappedMemory @ sysbus 0x00040000
+    size: 0x000F0000
+
+smu1: Memory.MappedMemory @ sysbus 0x41380000
+    size: 0x0007F800
+
+smu2: Memory.MappedMemory @ sysbus 0x443C0000
+    size: 0x00023000
+
+// 5. Console Serial Port (Flexcomm 3 at 0x40109000)
+flexcomm3: UART.NXP_FLEXCOMM @ sysbus 0x40109000
+    IRQ -> nvic@17
