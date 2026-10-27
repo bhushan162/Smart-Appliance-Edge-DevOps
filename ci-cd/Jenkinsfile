@@ -2,14 +2,15 @@ pipeline {
     // 1. Where to execute the pipeline
     agent {
         docker {
-            image 'zephyr-build-env:latest' // The Docker image you want to use
-            args '-u root'         // Optional: Run container as root user if needed
+            image 'zephyr-build-env:latest'
+            args '-u root'
         }
     }
 
-    // Define the parameter dropdown
     parameters {
-        choice(name: 'RELEASE_TYPE', choices: ['None (CI Build)', 'Patch', 'Minor', 'Major'], description: 'Select the type of release')
+        choice(name: 'RELEASE_TYPE',
+               choices: ['None (CI Build)', 'Patch', 'Minor', 'Major'],
+               description: 'Select the type of release')
     }
 
     // 2. Poll GitHub every 2 minutes for new commits
@@ -17,16 +18,9 @@ pipeline {
         pollSCM('H/2 * * * *')
     }
 
-    environment {
-        // Fallback to v0.0.0 if no tags exist yet
-        LATEST_GIT_TAG = "${sh(script: 'git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0"', returnStdout: true).trim()}"
-    }
-
-    // 3. The execution steps divided into stages
     stages {
         stage('Checkout') {
             steps {
-                // Jenkins automatically checks out the code before the pipeline starts
                 checkout scm
             }
         }
@@ -34,13 +28,24 @@ pipeline {
         stage('Calculate Version') {
             steps {
                 script {
-                    echo "Latest Git Tag: ${LATEST_GIT_TAG}"
+                    // Container runs as root but the workspace is owned by jenkins,
+                    // so git refuses to work ("dubious ownership") unless we whitelist it.
+                    sh 'git config --global --add safe.directory "$WORKSPACE"'
 
-                    // Regex to parse vMAJOR.MINOR.PATCH
-                    def match = LATEST_GIT_TAG =~ /v(\d+)\.(\d+)\.(\d+)/
-                    def major = match ? match[0][1].toInteger() : 0
-                    def minor = match ? match[0][2].toInteger() : 0
-                    def patch = match ? match[0][3].toInteger() : 0
+                    // Make sure tags are present, then read the latest one (fallback v0.0.0)
+                    sh 'git fetch --tags --force || true'
+                    def latestTag = sh(
+                        script: 'git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0"',
+                        returnStdout: true
+                    ).trim()
+                    echo "Latest Git Tag: ${latestTag}"
+
+                    // Parse vMAJOR.MINOR.PATCH without regex Matcher objects
+                    // (java.util.regex.Matcher is not serializable in CPS pipelines)
+                    def parts = latestTag.replaceFirst('^v', '').tokenize('.')
+                    int major = parts.size() > 0 ? parts[0].toInteger() : 0
+                    int minor = parts.size() > 1 ? parts[1].toInteger() : 0
+                    int patch = parts.size() > 2 ? parts[2].toInteger() : 0
 
                     if (params.RELEASE_TYPE == 'Patch') {
                         patch += 1
@@ -61,7 +66,7 @@ pipeline {
 
                     echo "Building Version: ${env.NEW_VERSION}"
 
-                    // Dynamically generate the Zephyr VERSION file before compiling
+                    // Generate the Zephyr VERSION file before compiling
                     sh """
                         echo "VERSION_MAJOR = ${major}" > firmware/VERSION
                         echo "VERSION_MINOR = ${minor}" >> firmware/VERSION
@@ -85,11 +90,11 @@ pipeline {
         stage('TEST SIMULATION - QEMU') {
             steps {
                 sh '''
-                # 1. Build specifically for virtual QEMU target
-                west build -p always -b mps2_an521 firmware/ -d build_qemu
+                    # 1. Build specifically for virtual QEMU target
+                    west build -p always -b mps2_an521 firmware/ -d build_qemu
 
-                # 2. Run your Python smoke test
-                python3 simulation/qemu/run_qemu_test.py
+                    # 2. Run Python smoke test
+                    python3 simulation/qemu/run_qemu_test.py
                 '''
             }
         }
@@ -97,7 +102,7 @@ pipeline {
         stage('Build Firmware (RW610)') {
             steps {
                 sh '''
-                    # Build physical release artifact (Zephyr reads the VERSION file we generated)
+                    # Build physical release artifact (Zephyr reads the VERSION file generated above)
                     west build -p always -b frdm_rw612 firmware/ -d rw610
                 '''
             }
@@ -113,21 +118,25 @@ pipeline {
         }
 
         stage('Deploy & Tag (Release Only)') {
-            // Conditional execution: Only run if user selected a release type and we are on the main branch
+            // Only run for a release type selected on the main branch.
+            // 'branch' only works in Multibranch jobs, so we check GIT_BRANCH as well.
             when {
-                branch 'main'
-                expression { params.RELEASE_TYPE != 'None (CI Build)' }
+                allOf {
+                    expression { env.BRANCH_NAME == 'main' || env.GIT_BRANCH == 'origin/main' }
+                    expression { params.RELEASE_TYPE != 'None (CI Build)' }
+                }
             }
             steps {
-                script {
-                    echo "Deploying Release v${env.NEW_VERSION}..."
-                    // 1. Tag the repository and push
-                    sh """
-                        git tag v${env.NEW_VERSION}
-                        git push origin v${env.NEW_VERSION}
-                    """
-                    echo "Successfully tagged and released v${env.NEW_VERSION}"
+                withCredentials([usernamePassword(credentialsId: 'github_login',
+                                                  usernameVariable: 'GIT_USER',
+                                                  passwordVariable: 'GIT_PASS')]) {
+                    // Single quotes: the shell expands the secrets, Groovy never sees them
+                    sh '''
+                        git tag "v${NEW_VERSION}"
+                        git push "https://${GIT_USER}:${GIT_PASS}@github.com/bhushan162/Smart-Appliance-Edge-DevOps.git" "v${NEW_VERSION}"
+                    '''
                 }
+                echo "Successfully tagged and released v${env.NEW_VERSION}"
             }
         }
     }
@@ -135,10 +144,8 @@ pipeline {
     // 4. Actions to run depending on build outcomes
     post {
         always {
-            // Archive the compiled binaries in Jenkins for debugging (kept for both CI and Release builds)
             archiveArtifacts artifacts: 'rw610/zephyr/zephyr.bin, rw610/zephyr/zephyr.elf', allowEmptyArchive: true
             echo 'Cleaning up the workspace...'
-            // Clean workspace to ensure next build is pristine and temporary VERSION file is removed
             cleanWs()
         }
         success {
