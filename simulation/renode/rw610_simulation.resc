@@ -3,7 +3,7 @@
 # Smart-Appliance-Edge-DevOps
 # =====================================================================
 
-$bin?=@build_rw610/zephyr/zephyr.elf
+$bin?=@rw610/zephyr/zephyr.elf
 
 # 1. Instantiate the virtual machine
 mach create "smart-hand-mixer-rw610"

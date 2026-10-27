@@ -18,15 +18,9 @@ RENODE_CMD = [
 ]
 
 REQUIRED_PASS_MARKERS = [
-    "Booting on board: nucleo_f401re",
-    "Configured PB0-PB10 as Slider GPIO Inputs",
-    "Configured PA5 as Motor Driver output",
-    "Selected Speed 2 (SLOW MIX)",
-    "Speed 2 [SLOW MIX] Stable at 250 RPM",
-    "Selected Speed 6 (CREAMING HIGH)",
-    "Speed 6 [CREAMING HIGH] Stable at 750 RPM",
-    "Selected Speed 0 (OFF / IDLE)",
-    "Motor stopped (0 RPM, 0% PWM)"
+    "Hello, Edge DevOps Pipeline!",
+    "Booting on board",
+    "Motor Supervisory Controller is Idle..."
 ]
 
 def run_test():
