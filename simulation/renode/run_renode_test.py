@@ -6,7 +6,7 @@ import os
 import select
 
 TIMEOUT_SECONDS = 35
-BINARY_PATH = "build_stm32/zephyr/zephyr.elf"
+BINARY_PATH = "rw610/zephyr/zephyr.elf"
 RESC_SCRIPT = "simulation/renode/stm32_simulation.resc"
 
 RENODE_CMD = [
