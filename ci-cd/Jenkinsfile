@@ -13,10 +13,10 @@ pipeline {
                description: 'Select the type of release')
     }
 
-    // 2. Poll GitHub every 2 minutes for new commits
-    triggers {
-        pollSCM('H/2 * * * *')
-    }
+    // // 2. Poll GitHub every 2 minutes for new commits
+    // triggers {
+    //     pollSCM('H/2 * * * *')
+    // }
 
     stages {
         stage('Checkout') {
