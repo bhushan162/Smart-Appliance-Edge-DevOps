@@ -7,11 +7,20 @@ pipeline {
         }
     }
 
+    // Define the parameter dropdown
+    parameters {
+        choice(name: 'RELEASE_TYPE', choices: ['None (CI Build)', 'Patch', 'Minor', 'Major'], description: 'Select the type of release')
+    }
+
     // 2. Poll GitHub every 2 minutes for new commits
     triggers {
         pollSCM('H/2 * * * *')
     }
 
+    environment {
+        // Fallback to v0.0.0 if no tags exist yet
+        LATEST_GIT_TAG = "${sh(script: 'git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0"', returnStdout: true).trim()}"
+    }
 
     // 3. The execution steps divided into stages
     stages {
@@ -19,6 +28,51 @@ pipeline {
             steps {
                 // Jenkins automatically checks out the code before the pipeline starts
                 checkout scm
+            }
+        }
+
+        stage('Calculate Version') {
+            steps {
+                script {
+                    echo "Latest Git Tag: ${LATEST_GIT_TAG}"
+
+                    // Regex to parse vMAJOR.MINOR.PATCH
+                    def match = LATEST_GIT_TAG =~ /v(\d+)\.(\d+)\.(\d+)/
+                    def major = match ? match[0][1].toInteger() : 0
+                    def minor = match ? match[0][2].toInteger() : 0
+                    def patch = match ? match[0][3].toInteger() : 0
+
+                    if (params.RELEASE_TYPE == 'Patch') {
+                        patch += 1
+                        env.NEW_VERSION = "${major}.${minor}.${patch}"
+                    } else if (params.RELEASE_TYPE == 'Minor') {
+                        minor += 1
+                        patch = 0
+                        env.NEW_VERSION = "${major}.${minor}.${patch}"
+                    } else if (params.RELEASE_TYPE == 'Major') {
+                        major += 1
+                        minor = 0
+                        patch = 0
+                        env.NEW_VERSION = "${major}.${minor}.${patch}"
+                    } else {
+                        // CI Build - append Jenkins build number
+                        env.NEW_VERSION = "${major}.${minor}.${patch}-dev.${env.BUILD_NUMBER}"
+                    }
+
+                    echo "Building Version: ${env.NEW_VERSION}"
+
+                    // Dynamically generate the Zephyr VERSION file before compiling
+                    sh """
+                        echo "VERSION_MAJOR = ${major}" > firmware/VERSION
+                        echo "VERSION_MINOR = ${minor}" >> firmware/VERSION
+                        echo "VERSION_PATCH = ${patch}" >> firmware/VERSION
+                        if [ "${params.RELEASE_TYPE}" = "None (CI Build)" ]; then
+                            echo "EXTRAVERSION = dev.${env.BUILD_NUMBER}" >> firmware/VERSION
+                        fi
+                        echo "Generated VERSION file:"
+                        cat firmware/VERSION
+                    """
+                }
             }
         }
 
@@ -30,7 +84,7 @@ pipeline {
 
         stage('TEST SIMULATION - QEMU') {
             steps {
-                sh'''
+                sh '''
                 # 1. Build specifically for virtual QEMU target
                 west build -p always -b mps2_an521 firmware/ -d build_qemu
 
@@ -40,10 +94,10 @@ pipeline {
             }
         }
 
-        stage('Build Firmware') {
+        stage('Build Firmware (RW610)') {
             steps {
                 sh '''
-                    # Build physical release artifact only after simulation passes
+                    # Build physical release artifact (Zephyr reads the VERSION file we generated)
                     west build -p always -b frdm_rw612 firmware/ -d rw610
                 '''
             }
@@ -57,29 +111,35 @@ pipeline {
                 '''
             }
         }
-        /* 
-        stage('Test') {
-            steps {
-                echo 'Running automated tests...'
-                
-            }
-        }
-        stage('Deploy') {
-            // Conditional execution
+
+        stage('Deploy & Tag (Release Only)') {
+            // Conditional execution: Only run if user selected a release type and we are on the main branch
             when {
                 branch 'main'
+                expression { params.RELEASE_TYPE != 'None (CI Build)' }
             }
             steps {
-                echo 'Deploying to production...'
+                script {
+                    echo "Deploying Release v${env.NEW_VERSION}..."
+                    // 1. Tag the repository and push
+                    sh """
+                        git tag v${env.NEW_VERSION}
+                        git push origin v${env.NEW_VERSION}
+                    """
+                    echo "Successfully tagged and released v${env.NEW_VERSION}"
+                }
             }
         }
-        */
     }
 
     // 4. Actions to run depending on build outcomes
     post {
         always {
+            // Archive the compiled binaries in Jenkins for debugging (kept for both CI and Release builds)
+            archiveArtifacts artifacts: 'rw610/zephyr/zephyr.bin, rw610/zephyr/zephyr.elf', allowEmptyArchive: true
             echo 'Cleaning up the workspace...'
+            // Clean workspace to ensure next build is pristine and temporary VERSION file is removed
+            cleanWs()
         }
         success {
             echo 'Pipeline completed successfully!'
