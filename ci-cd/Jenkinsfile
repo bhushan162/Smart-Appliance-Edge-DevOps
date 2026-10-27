@@ -70,7 +70,8 @@ pipeline {
                     sh """
                         echo "VERSION_MAJOR = ${major}" > firmware/VERSION
                         echo "VERSION_MINOR = ${minor}" >> firmware/VERSION
-                        echo "VERSION_PATCH = ${patch}" >> firmware/VERSION
+                        echo "PATCHLEVEL = ${patch}" >> firmware/VERSION
+                        echo "VERSION_TWEAK = 0" >> firmware/VERSION
                         if [ "${params.RELEASE_TYPE}" = "None (CI Build)" ]; then
                             echo "EXTRAVERSION = dev.${env.BUILD_NUMBER}" >> firmware/VERSION
                         fi
