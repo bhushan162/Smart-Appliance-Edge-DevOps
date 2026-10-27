@@ -26,6 +26,13 @@ sram_code: Memory.MappedMemory @ sysbus 0x00000000
 sram_data: Memory.MappedMemory @ sysbus 0x00040000
     size: 0x000F0000
 
+// Non-Secure SRAM Aliases (ARM Cortex-M33 TrustZone)
+sram_code_ns: Memory.MappedMemory @ sysbus 0x10000000
+    size: 0x00040000
+
+sram_data_ns: Memory.MappedMemory @ sysbus 0x10040000
+    size: 0x000F0000
+
 smu1: Memory.MappedMemory @ sysbus 0x41380000
     size: 0x0007F800
 

@@ -17,5 +17,5 @@ sysbus LoadELF $bin
 # 4. Pipe Flexcomm 3 serial logs to standard output
 showAnalyzer sysbus.flexcomm3 Antmicro.Renode.Analyzers.LoggingUartAnalyzer
 
-# 5. Advance virtual time by 1 second to capture boot logs
-emulation RunFor "1.0"
+# 5. Advance virtual time by 2 seconds to capture boot logs
+emulation RunFor "2.0"
