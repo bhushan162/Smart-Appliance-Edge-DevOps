@@ -1,44 +1,65 @@
 // =====================================================================
 // NXP RW610 (Cortex-M33) Custom Renode Hardware Blueprint
 // Smart-Appliance-Edge-DevOps Platform
-// ====================================================================
+// Target: Connected 10-Speed Smart Hand Mixer
+// =====================================================================
 
-// 1. ARM Cortex-M33 Core
+// ---------------------------------------------------------------------
+// 1. Core Processing & Interrupt Management
+// ---------------------------------------------------------------------
+
+// ARM Nested Vectored Interrupt Controller (NVIC)
+nvic: IRQControllers.NVIC @ sysbus 0xE000E000
+    IRQ -> cpu@0
+
+// ARM Cortex-M33 Core with TrustZone
 cpu: CPU.CortexM @ sysbus
     cpuType: "cortex-m33"
     nvic: nvic
 
-// 2. ARQ Nested Vector Interrupt Controller (NVIC)
-nvic: IRQControllers.NVIC @ sysbus 0xE000E000
-    IRQ -> cpu@0
+// ---------------------------------------------------------------------
+// 2. Flash Memory (External Quad-SPI FlexSPI with XIP)
+// ---------------------------------------------------------------------
 
-// 3. FlexSPI Flash (8 MB XIP at 0x18000000, plus 0x08000000 alias)
+// 8 MB FlexSPI Flash at 0x18000000 (Zephyr XIP execution address)
 flash: Memory.MappedMemory @ sysbus 0x18000000
     size: 0x00800000
 
+// 8 MB FlexSPI Flash alias at 0x08000000 (Bootloader mirror)
 flash_alias: Memory.MappedMemory @ sysbus 0x08000000
     size: 0x00800000
 
-// 4. Internal RAM Banks (Code SRAM: 256KB at 0x00000000, Data SRAM: 960KB at 0x00040000)
+// ---------------------------------------------------------------------
+// 3. Internal SRAM Banks & ARM TrustZone Non-Secure Aliases
+// ---------------------------------------------------------------------
+
+// Code SRAM (256 KB) - Secure address
 sram_code: Memory.MappedMemory @ sysbus 0x00000000
     size: 0x00040000
 
+// Data SRAM (960 KB) - Secure address
 sram_data: Memory.MappedMemory @ sysbus 0x00040000
     size: 0x000F0000
 
-// Non-Secure SRAM Aliases (ARM Cortex-M33 TrustZone)
+// Code SRAM Non-Secure Alias (Bit 28 set)
 sram_code_ns: Memory.MappedMemory @ sysbus 0x10000000
     size: 0x00040000
 
+// Data SRAM Non-Secure Alias (Holds Vector Table VTOR and Zephyr Stack)
 sram_data_ns: Memory.MappedMemory @ sysbus 0x10040000
     size: 0x000F0000
 
+// Shared Memory Units (Radio / Subsystems)
 smu1: Memory.MappedMemory @ sysbus 0x41380000
     size: 0x0007F800
 
 smu2: Memory.MappedMemory @ sysbus 0x443C0000
     size: 0x00023000
 
-// 5. Console Serial Port (Flexcomm 3 at 0x40109000)
+// ---------------------------------------------------------------------
+// 4. Communication Peripherals
+// ---------------------------------------------------------------------
+
+// NXP Flexcomm 3 configured as default Zephyr debug console UART
 flexcomm3: UART.NXP_FLEXCOMM @ sysbus 0x40109000
     IRQ -> nvic@17
