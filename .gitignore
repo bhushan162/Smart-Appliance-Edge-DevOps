@@ -2,6 +2,8 @@
 build/
 build_*/
 _build/
+rw610/
+test_build_*/
 dist/
 bin/
 
