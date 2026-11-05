@@ -135,11 +135,8 @@ pipeline {
                         # 1. Create the local tag
                         git tag "v${NEW_VERSION}"
 
-                        # 2. Encode credentials safely into standard HTTP Basic Auth header
-                        AUTH_HEADER="AUTHORIZATION: basic $(printf "%s:%s" "${GIT_USER}" "${GIT_PASS}" | base64 -w 0)"
-
-                        # 3. Push the tag without exposing credentials in the URL
-                        git -c http.extraheader="${AUTH_HEADER}" push origin "v${NEW_VERSION}"
+                        # 2. Push using Git's native credential helper
+                        git -c credential.helper='!f() { echo "username=${GIT_USER}"; echo "password=${GIT_PASS}"; }; f' push origin "v${NEW_VERSION}"
                     '''
                 }
                 echo "Successfully tagged and released v${env.NEW_VERSION}"
