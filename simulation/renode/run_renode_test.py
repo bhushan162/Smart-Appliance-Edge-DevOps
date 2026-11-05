@@ -18,9 +18,14 @@ RENODE_CMD = [
 ]
 
 REQUIRED_PASS_MARKERS = [
-    "Hello, Edge DevOps Pipeline!",
-    "Booting on board",
-    "Motor Supervisory Controller is Idle..."
+    "STEP 0: MOTOR INITIALIZATION",
+    "STEP 1: PRESSING SPEED 2 BUTTON",
+    "STEP 2: PRESSING SPEED 6 BUTTON",
+    "STEP 3: PRESSING SPEED 0 BUTTON",
+    "INITIAL_PWM_PULSE_NS",
+    "SPEED2_PWM_PULSE_NS",
+    "SPEED6_PWM_PULSE_NS",
+    "SPEED0_PWM_PULSE_NS"
 ]
 
 def run_test():

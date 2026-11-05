@@ -1,6 +1,7 @@
 # =====================================================================
 # Renode Headless Simulation Script for NXP RW610 Cortex-M33
-# Smart-Appliance-Edge-DevOps
+# Smart-Appliance-Edge-DevOps Platform
+# Test Suite 2: Slider Input & Hardware PWM Duty Verification (Virtual Buttons)
 # =====================================================================
 
 $bin?=@rw610/zephyr/zephyr.elf
@@ -8,14 +9,58 @@ $bin?=@rw610/zephyr/zephyr.elf
 # 1. Instantiate the virtual machine
 mach create "smart-hand-mixer-rw610"
 
-# 2. Load your custom RW610 platform blueprint
+# 2. Load custom RW610 platform blueprint (.repl with Virtual Buttons)
 machine LoadPlatformDescription @simulation/renode/rw610.repl
 
 # 3. Load the compiled Cortex-M33 ELF binary
 sysbus LoadELF $bin
 
-# 4. Pipe Flexcomm 3 serial logs to standard output
-showAnalyzer sysbus.flexcomm3 Antmicro.Renode.Analyzers.LoggingUartAnalyzer
+# 4. Set Vector Table Offset, Stack Pointer and PC for Cortex-M33 FlexSPI XIP
+cpu VectorTableOffset 0x18001400
+cpu SP 0x10042940
+cpu PC 0x18002105
 
-# 5. Advance virtual time by 2 seconds to capture boot logs
-emulation RunFor "2.0"
+# 5. Hardware Status Registers (PMU and Clocks report ready)
+sysbus Tag <0x50031028 4> "PMU_STATUS" 0xFFFFFFFF
+sysbus Tag <0x50003088 4> "T3_REF_CLK" 0xFFFFFFFF
+sysbus Tag <0x50001624 4> "FLEXSPI_CLK_DIV" 0x0
+
+# 6. Bypass Silicon Reset Wait Loops & UART Poll
+cpu AddHook 0x18003b40 "cpu.PC = cpu.LR"
+cpu AddHook 0x18003ba8 "cpu.PC = cpu.LR"
+cpu AddHook 0x18005a02 "cpu.PC = cpu.LR"
+cpu AddHook 0x1800574c "cpu.PC = cpu.LR"
+
+# 7. Wire Virtual Buttons to Slider Contacts (0x10040FB8 = s_simulated_speed)
+python "monitor.Machine['sysbus.buttonSpeed2'].StateChanged += lambda p: monitor.Machine.SystemBus.WriteByte(0x10040FB8, 2 if p else 0)"
+python "monitor.Machine['sysbus.buttonSpeed6'].StateChanged += lambda p: monitor.Machine.SystemBus.WriteByte(0x10040FB8, 6 if p else 0)"
+python "monitor.Machine['sysbus.buttonSpeed0'].StateChanged += lambda p: monitor.Machine.SystemBus.WriteByte(0x10040FB8, 0 if p else 0)"
+
+# 8. Step 0: Let RTOS boot and reach IDLE state
+emulation RunFor "1.0"
+echo "=== STEP 0: MOTOR INITIALIZATION ==="
+echo "INITIAL_PWM_PULSE_NS:"
+sysbus ReadDoubleWord 0x10040D48
+
+# 9. Step 1: Stimulus - Press Speed 2 Button (SLOW MIX, Target: 20% PWM = 20,000 ns pulse)
+echo "=== STEP 1: PRESSING SPEED 2 BUTTON ==="
+buttonSpeed2 Press
+emulation RunFor "1.0"
+echo "SPEED2_PWM_PULSE_NS:"
+sysbus ReadDoubleWord 0x10040D48
+
+# 10. Step 2: Stimulus - Release Speed 2 and Press Speed 6 Button (CREAMING HIGH, Target: 60% PWM = 60,000 ns pulse)
+echo "=== STEP 2: PRESSING SPEED 6 BUTTON ==="
+buttonSpeed2 Release
+buttonSpeed6 Press
+emulation RunFor "1.5"
+echo "SPEED6_PWM_PULSE_NS:"
+sysbus ReadDoubleWord 0x10040D48
+
+# 11. Step 3: Stimulus - Release Speed 6 and Press Speed 0 Button (OFF / IDLE, Target: 0% PWM = 0 ns pulse)
+echo "=== STEP 3: PRESSING SPEED 0 BUTTON ==="
+buttonSpeed6 Release
+buttonSpeed0 Press
+emulation RunFor "1.0"
+echo "SPEED0_PWM_PULSE_NS:"
+sysbus ReadDoubleWord 0x10040D48

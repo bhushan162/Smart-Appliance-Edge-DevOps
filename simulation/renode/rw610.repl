@@ -60,6 +60,26 @@ smu2: Memory.MappedMemory @ sysbus 0x443C0000
 // 4. Communication Peripherals
 // ---------------------------------------------------------------------
 
-// NXP Flexcomm 3 configured as default Zephyr debug console UART
+// NXP Flexcomm 3 configured as default Zephyr debug console UART (Non-Secure and Secure aliases)
 flexcomm3: UART.NXP_FLEXCOMM @ sysbus 0x40109000
     IRQ -> nvic@17
+
+flexcomm3_sec: UART.NXP_FLEXCOMM @ sysbus 0x50109000
+    IRQ -> nvic@17
+
+// NXP OS Timer at 0x5013B000 (IRQ 41)
+os_timer: Memory.MappedMemory @ sysbus 0x5013B000
+    size: 0x1000
+
+// ---------------------------------------------------------------------
+// 5. Virtual Human Interface Buttons (Discrete Slider Lever Contacts)
+// ---------------------------------------------------------------------
+
+// Slider Speed 2 Contact (SLOW MIX - 250 RPM)
+buttonSpeed2: Miscellaneous.Button @ sysbus
+
+// Slider Speed 6 Contact (CREAMING HIGH - 750 RPM)
+buttonSpeed6: Miscellaneous.Button @ sysbus
+
+// Slider Speed 0 Contact (OFF / IDLE - 0 RPM)
+buttonSpeed0: Miscellaneous.Button @ sysbus
