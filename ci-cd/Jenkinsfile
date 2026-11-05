@@ -131,10 +131,15 @@ pipeline {
                 withCredentials([usernamePassword(credentialsId: 'github_login',
                                                   usernameVariable: 'GIT_USER',
                                                   passwordVariable: 'GIT_PASS')]) {
-                    // Single quotes: the shell expands the secrets, Groovy never sees them
                     sh '''
+                        # 1. Create the local tag
                         git tag "v${NEW_VERSION}"
-                        git push "https://${GIT_USER}:${GIT_PASS}@github.com/bhushan162/Smart-Appliance-Edge-DevOps.git" "v${NEW_VERSION}"
+
+                        # 2. Encode credentials safely into standard HTTP Basic Auth header
+                        AUTH_HEADER="AUTHORIZATION: basic $(printf "%s:%s" "${GIT_USER}" "${GIT_PASS}" | base64 -w 0)"
+
+                        # 3. Push the tag without exposing credentials in the URL
+                        git -c http.extraheader="${AUTH_HEADER}" push origin "v${NEW_VERSION}"
                     '''
                 }
                 echo "Successfully tagged and released v${env.NEW_VERSION}"
